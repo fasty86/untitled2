@@ -7,8 +7,12 @@
 {% block main %}
     <form action="/quote" method="post">
         <div class="form-group">
-            <input autocomplete="off" autofocus class="form-control" name="username" placeholder="Username" type="text">
+
+            <input autocomplete="off" autofocus class="form-control" id="uname" name="username" placeholder="Username" type="text">
+       <div id="valid" class="form-group">
         </div>
+        </div>
+
         <div class="form-group">
             <input class="form-control" name="password" placeholder="Password" type="password">
             </div>
@@ -17,4 +21,33 @@
         </div>
         <button class="btn btn-primary" type="submit">Submit</button>
     </form>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <script>
+
+            let input = document.querySelector('#uname');
+            input.onkeyup = function() {
+                console.log(input.value)
+                $.get('/check?q=' + input.value, function(data) {
+                    console.log(data);
+                    $("#uname").removeClass('is-valid').removeClass('is-invalid');
+                    $("#valid").removeClass('invalid-feedback').removeClass('valid-feedback')
+                    $('#valid').text("");
+                    if(data == 'exist'){
+                        status = 'is-invalid';
+                         $('#valid').text("Username already exist");
+                         $("#valid").addClass('invalid-feedback');
+                    }
+                    else if(input.value != ''){
+                        status = 'is-valid';
+                        $('#valid').text("Looks good");
+                        $("#valid").addClass('valid-feedback');
+                    }
+                    else{
+                        status = '';
+                    }
+                    $("#uname").addClass(status);
+                });
+            };
+
+        </script>
 {% endblock %}

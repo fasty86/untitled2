@@ -42,7 +42,7 @@ if not os.environ.get("API_KEY"):
 
 @app.route("/")
 @login_required
-def index():
+def index(): # TODO Реализовать главную страницу
     """Show portfolio of stocks"""
     return apology("TODO")
 
@@ -55,11 +55,11 @@ def buy():
         # запрашиваем перчень компаний  через API
         companies = symbols()
         print(companies)
-        return render_template("buy.html" , brands = companies)
+        return render_template("buy.html", brands=companies)
     else:
         # обрабатываем POST request из формы
         if not request.form.get("symbol"):
-            return apology("You must choose company" , 403)
+            return apology("You must choose company", 403)
         company_id = request.form.get("symbol")
         quantity = request.form.get("shares")
         # получение актуальной цены
@@ -79,16 +79,23 @@ def buy():
             db.execute("INSERT INTO purchase ('id_user', 'company', 'count' , 'price') VALUES( :id_user, :company, :count, :price)", id_user = id_user, company = company_id , count = quantity , price = price)
             # уменьшаем кошелек пользователя на сумму купленных акций
             # Запись в бд
-            enter_expense(id_user , -(expense))
+            enter_expense(id_user, -(expense))
             return redirect("/")
         else:
             return apology("You don't have enough money" , 403)
 
 
 @app.route("/check", methods=["GET"])
-def check():
+def check(): # TODO реализовать проверку пользователя в БД
     """Return true if username available, else false, in JSON format"""
-    return jsonify("TODO")
+    username = request.args.get("q")
+    rows = db.execute("SELECT * FROM users WHERE username = :username",
+                      username=username)
+    if len(rows) != 0:
+        return "exist"
+    else:
+        return "valid"
+
 
 
 @app.route("/history")
