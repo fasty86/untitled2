@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Quote
+{% endblock %}
+
+{% block main %}
+    <form action="/quote" method="post">
+        <div class="form-group">
+            <select class="form-control" name="symbol" placeholder="Company Symbol">
+                <option disabled="" selected="" value="">Symbol</option>
+                    {% for key in brands %}
+                            <option value="{{ key }}">{{ brands[key] }}</option>
+                    {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-primary" type="submit">Quote</button>
+    </form>
+{% endblock %}
