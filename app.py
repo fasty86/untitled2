@@ -7,13 +7,14 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import apology, login_required, lookup, usd , symbols, get_price, get_ucash, enter_expense
+from helpers import apology, login_required, lookup, usd, symbols, get_price, get_ucash, enter_expense
 
 # Configure application
 app = Flask(__name__)
 
 # Ensure templates are auto-reloaded
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
 
 # Ensure responses aren't cached
 @app.after_request
@@ -22,6 +23,7 @@ def after_request(response):
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
     return response
+
 
 # Custom filter
 app.jinja_env.filters["usd"] = usd
@@ -42,9 +44,9 @@ if not os.environ.get("API_KEY"):
 
 @app.route("/")
 @login_required
-def index(): # TODO Реализовать главную страницу
+def index():  # TODO Реализовать главную страницу
     """Show portfolio of stocks"""
-    return apology("TODO")
+    return render_template("index.html")
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -68,25 +70,26 @@ def buy():
         print(session["user_id"])
         # id_user = db.execute("SELECT id from users WHERE username = :username", username = session["user_id"])
         id_user = session["user_id"]
-        #print(id_user)
+        # print(id_user)
         if not id_user:
             return apology("User identity error", 403)
-
         # проверяем, что у пользователя достаточно средств на покупку
         expense = price * float(quantity)
         act_cash = get_ucash(id_user)
         if (act_cash - expense) > 0:
-            db.execute("INSERT INTO purchase ('id_user', 'company', 'count' , 'price') VALUES( :id_user, :company, :count, :price)", id_user = id_user, company = company_id , count = quantity , price = price)
+            db.execute(
+                "INSERT INTO purchase ('id_user', 'company', 'count' , 'price') VALUES( :id_user, :company, :count, :price)",
+                id_user=id_user, company=company_id, count=quantity, price=price)
             # уменьшаем кошелек пользователя на сумму купленных акций
             # Запись в бд
-            enter_expense(id_user, -(expense))
+            enter_expense(id_user, -expense)
             return redirect("/")
         else:
-            return apology("You don't have enough money" , 403)
+            return apology("You don't have enough money", 403)
 
 
 @app.route("/check", methods=["GET"])
-def check(): # TODO реализовать проверку пользователя в БД
+def check():
     """Return true if username available, else false, in JSON format"""
     username = request.args.get("q")
     rows = db.execute("SELECT * FROM users WHERE username = :username",
@@ -95,7 +98,6 @@ def check(): # TODO реализовать проверку пользовате
         return "exist"
     else:
         return "valid"
-
 
 
 @app.route("/history")
@@ -184,14 +186,16 @@ def register():
             return apology("password and confirmation isn't identical", 403)
         else:
             # проверем есть ли уже в системе такой пользователь
-            exist = db.execute("SELECT username FROM users WHERE username = :username", username=request.form.get("username"))
+            exist = db.execute("SELECT username FROM users WHERE username = :username",
+                               username=request.form.get("username"))
             print(exist)
-            if  len(exist) > 0:
+            if len(exist) > 0:
                 return apology("user with this logon name already exist", 403)
             else:
                 # генерируем из пароля хэш
                 psw = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=4)
-                db.execute("INSERT INTO users ('username' , 'hash') VALUES(:username, :ha)", username=request.form.get("username"), ha=psw)
+                db.execute("INSERT INTO users ('username' , 'hash') VALUES(:username, :ha)",
+                           username=request.form.get("username"), ha=psw)
                 return redirect("/")
     # если идет просто обращение к странице
     else:
