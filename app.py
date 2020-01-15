@@ -7,7 +7,8 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import apology, login_required, lookup, usd, symbols, get_price, get_ucash, enter_expense
+from helpers import apology, login_required, lookup, usd, symbols, get_price, get_ucash, enter_expense, get_stock, \
+    get_sum_all
 
 # Configure application
 app = Flask(__name__)
@@ -46,7 +47,12 @@ if not os.environ.get("API_KEY"):
 @login_required
 def index():  # TODO Реализовать главную страницу
     """Show portfolio of stocks"""
-    return render_template("index.html")
+    id_user = session["user_id"]
+    user_portfolio = get_stock(id_user)
+    print(f'PORTFOLIO')
+    print(user_portfolio)
+    user_actual = get_sum_all(id_user)
+    return render_template("index.html", portfolio=user_portfolio, all=user_actual)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -196,6 +202,7 @@ def register():
                 psw = generate_password_hash(request.form.get("password"), method='pbkdf2:sha256', salt_length=4)
                 db.execute("INSERT INTO users ('username' , 'hash') VALUES(:username, :ha)",
                            username=request.form.get("username"), ha=psw)
+                print(f'User created')
                 return redirect("/")
     # если идет просто обращение к странице
     else:

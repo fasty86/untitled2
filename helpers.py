@@ -138,10 +138,19 @@ def get_stock(id_user):
         # получаем актуальную стоимость от сервиса через API
         row['current_price'] = get_price(row['company'])
         print(f"current price : {row['current_price']}")
+    return data
+
+
+def get_sum_all(id_user):
+    """ получение общей суммыф активов пользователя"""
     # сделаем запрос из бд для подсчета  общей суммы
     calc_data = db.execute(
-        "SELECT distinct (u.cash + p.cash) cash FROM users u JOIN (select id_user, SUM(count * price) cash FROM "
+        "SELECT distinct coalesce(u.cash + p.cash, 0) cash FROM users u JOIN (select id_user, SUM(count * price) cash FROM "
         "purchase GROUP BY id_user ) p on u.id = p.id_user join purchase where u.id = :user_id;",
         user_id=id_user)
-    calc_sum = calc_data[0]['cash']
-    print(f" calc_sum : {calc_sum:,.2f}")
+    if len(calc_data) !=0:
+        calc_sum = calc_data[0]['cash']
+        print(f" calc_sum : {calc_sum:,.2f}")
+        return f'{calc_sum:,.2f}'
+    else:
+        return 0
