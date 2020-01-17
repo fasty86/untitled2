@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Index
+    Transaction history
 {% endblock %}
 
 {% block main %}
@@ -10,32 +10,26 @@
     <tr>
       <th scope="col">Username</th>
       <th scope="col">Company</th>
+      <th scope="col">Operation date</th>
       <th scope="col">Quantity</th>
       <th scope="col">Price</th>
-      <th scope="col">Current price on market</th>
-      <th scope="col">Stock</th>
     </tr>
   </thead>
   <tbody>
-        {% for transaction in portfolio %}
+        {% for transaction in history %}
             <tr>
                     <td>{{ transaction['name'] }}</td>
                     <td>{{ transaction['companyName'] }}</td>
+                    <td>{{ transaction['date'] }}</td>
                     <td>{{ transaction['quantity'] }}</td>
                     <td>{{ transaction['price'] }}</td>
-                    <td>{{ transaction['current_price'] }}</td>
-                    <td>{{ transaction['stock'] }}</td>
             </tr>
         {% endfor %}
     </tr>
   </tbody>
     <tfoot>
             <tr>
-                <td colspan="5"></td>
-                <td style="font-weight:bold">Remaining {{ cash }}</td>
-            </tr>
-            <tr>
-                <td colspan="5"></td>
+                <td colspan="4"></td>
                 <td style="font-weight:bold">Summary {{ all }}</td>
             </tr>
         </tfoot>

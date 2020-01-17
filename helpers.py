@@ -111,6 +111,23 @@ def get_price(name):
         return None
 
 
+def get_company(name):
+    try:
+        api_key = os.environ.get("API_KEY")
+        response = requests.get(
+            f"https://cloud-sse.iexapis.com/stable/stock/{urllib.parse.quote_plus(name)}/quote?token={api_key}")
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+
+        # Parse response
+    try:
+        quote = response.json()
+        return quote["companyName"]
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 """ Функции для работы с БД """
 db = SQL("sqlite:///finance.db")
 
@@ -131,12 +148,13 @@ def enter_expense(id_user, expense):
 
 # получаем данные для  index.html
 def get_stock(id_user):
-    data = db.execute("SELECT * FROM v_stock where id = :user_id", user_id=id_user)
+    data = db.execute("SELECT * FROM v_stock4 where id = :user_id", user_id=id_user)
     for row in data:
         for key, value in row.items():
             print(f'{key} : {value}')
         # получаем актуальную стоимость от сервиса через API
         row['current_price'] = get_price(row['company'])
+        row['companyName'] = get_company(row['company'])
         print(f"current price : {row['current_price']}")
     return data
 
@@ -148,9 +166,32 @@ def get_sum_all(id_user):
         "SELECT distinct coalesce(u.cash + p.cash, 0) cash FROM users u JOIN (select id_user, SUM(count * price) cash FROM "
         "purchase GROUP BY id_user ) p on u.id = p.id_user join purchase where u.id = :user_id;",
         user_id=id_user)
-    if len(calc_data) !=0:
+    if len(calc_data) != 0:
         calc_sum = calc_data[0]['cash']
         print(f" calc_sum : {calc_sum:,.2f}")
         return f'{calc_sum:,.2f}'
     else:
         return 0
+
+
+def get_quantity(id_user, symbol):
+    """ Получаем кол-во акций данного продукта у пользователя"""
+    q = db.execute("SELECT quantity FROM v_stock2 WHERE id = 5 AND company = :symbol AND id = :user_id", symbol=symbol,
+                   user_id=id_user)
+    if len(q) != 0:
+        quantity = q[0]['quantity']
+        print(f" quantity : {quantity}")
+        return int(quantity)
+    else:
+        return 0
+
+
+def get_history(id_user):
+    """ Возвращаем историю транзакций пользователя , для этого есть представление в бд v_history """
+    q = db.execute("SELECT * FROM v_history WHERE id = :id_user", id_user=id_user)
+    if len(q) != 0:
+        for row in q:
+            row['companyName'] = get_company(row['company'])
+        return q
+    else:
+        return None

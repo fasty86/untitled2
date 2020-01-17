@@ -8,7 +8,7 @@ from werkzeug.exceptions import default_exceptions, HTTPException, InternalServe
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, lookup, usd, symbols, get_price, get_ucash, enter_expense, get_stock, \
-    get_sum_all
+    get_sum_all, get_quantity, get_history
 
 # Configure application
 app = Flask(__name__)
@@ -45,14 +45,15 @@ if not os.environ.get("API_KEY"):
 
 @app.route("/")
 @login_required
-def index():  # TODO Реализовать главную страницу
+def index():
     """Show portfolio of stocks"""
     id_user = session["user_id"]
     user_portfolio = get_stock(id_user)
+    cash = get_ucash(id_user)
     print(f'PORTFOLIO')
     print(user_portfolio)
     user_actual = get_sum_all(id_user)
-    return render_template("index.html", portfolio=user_portfolio, all=user_actual)
+    return render_template("index.html", portfolio=user_portfolio, all=user_actual, cash=f'{cash:,.2f}')
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -110,7 +111,12 @@ def check():
 @login_required
 def history():
     """Show history of transactions"""
-    return apology("TODO")
+    id_user = session["user_id"]
+    user_history = get_history(id_user)
+    user_actual = get_sum_all(id_user)
+    print(f'HISTORY : {user_history}')
+    return render_template("history.html", history=user_history, all=user_actual)
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -213,7 +219,43 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+
+    if request.method == "GET":
+        # запрашиваем перчень компаний  через API
+        companies = symbols()
+        print(companies)
+        return render_template("sell.html", brands=companies)
+    else:
+        # обрабатываем POST request из формы
+        if not request.form.get("symbol"):
+            return apology("You must choose company", 403)
+        company_id = request.form.get("symbol")
+        quantity = request.form.get("shares")
+        # получение актуальной цены
+        price = get_price(company_id)
+        # получение Id пользователя
+        print(session["user_id"])
+        # id_user = db.execute("SELECT id from users WHERE username = :username", username = session["user_id"])
+        id_user = session["user_id"]
+        # print(id_user)
+        if not id_user:
+            return apology("User identity error", 403)
+        # проверяем, что у пользователя достаточно средств на покупку
+        quantity_my = get_quantity(id_user, company_id)
+        expense = price * float(quantity)
+        act_cash = get_ucash(id_user)
+        # Надо проверить что у пользователя есть достаточное кол-во акций на продажу
+        if (quantity_my - int(quantity)) >= 0:
+            print(f'{quantity=}')
+            db.execute(
+                "INSERT INTO purchase ('id_user', 'company', 'count' , 'price') VALUES( :id_user, :company, :count, :price)",
+                id_user=id_user, company=company_id, count=int(quantity)*(-1), price=price)
+            # добавляем в  кошелек пользователя на сумму купленных акций
+            # Запись в бд
+            enter_expense(id_user, expense)
+            return redirect("/")
+        else:
+            return apology("You don't have enough йгфтешен", 403)
 
 
 def errorhandler(e):
